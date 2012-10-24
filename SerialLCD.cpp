@@ -56,14 +56,14 @@ SerialLCD::SerialLCD (int num_lines,int num_col,int i2c_address,int interface){
 	
 	g_num_lines = num_lines;
 	g_num_col = num_col;
-	
-	switch (interface) {
+	g_interface = interface;
+
+	switch (g_interface) {
 		case RS232:
 			g_baudrate = i2c_address;
 			break;
 		case I2C:
 			g_i2c_address = i2c_address;
-			g_interface = interface;
 			break;
 		case SPI:
 			break;
@@ -236,7 +236,7 @@ void SerialLCD::init () {
 	delay(500);
 	switch (g_interface) {
 		case RS232:
-			Serial.begin(9600);
+			Serial.begin(g_baudrate);
 			break;
 		case I2C:
 			Wire.begin();
