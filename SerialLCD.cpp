@@ -1,6 +1,6 @@
 /*
  
- NKC v1 22/OCT/2012 orders@nkcelectronics.com http://www.nkcelectronics.com
+ SerialLCD v1 22/OCT/2012 orders@nkcelectronics.com http://www.nkcelectronics.com
  
  What is this?
  
@@ -18,7 +18,10 @@
  
  SPI interface:
  
- ICSP
+ Digital pin 13 - SCK
+ Digital pin 10 - SS or CS
+ Digital pin 11 - MOSI (Arduino to LCD module)
+ Digital pin 12 - MISO (LCD module to Arduino... not used)
  
  Usage:
  
@@ -28,7 +31,6 @@
  */
 
 #include "SerialLCD.h"
-#include <Wire.h>
 
 //--------------------------------------------------------
 
@@ -38,21 +40,24 @@
 int g_num_lines = 2;
 int g_num_col = 16;
 
-// Default address, interface and baud of the display
+// Default address, interface, baud and SPI transfer mode of the display
 
 int g_i2c_address = 0x28;
 int g_interface = 0; // 0 = Serial; 1 = i2c; 2 = SPI
 int g_baudrate = 9600;
+int g_sspin = 10;
+int g_sclk = 13;
+int g_mosi = 11;
+int g_miso = 12;
 
 // Index to position cursor based on line and column (specific for NKC Serial displays)
 int g_index[4] = { 0x00, 0x40, 0x14, 0x54 };
-
 
 //stuff the library user might call---------------------------------
 
 //constructor.  num_lines must be 1, 2, 3, or 4 currently.
 
-SerialLCD::SerialLCD (int num_lines,int num_col,int i2c_address,int interface){
+SerialLCD::SerialLCD (int num_lines,int num_col,int parameter,int interface){
 	
 	g_num_lines = num_lines;
 	g_num_col = num_col;
@@ -60,12 +65,13 @@ SerialLCD::SerialLCD (int num_lines,int num_col,int i2c_address,int interface){
 
 	switch (g_interface) {
 		case RS232:
-			g_baudrate = i2c_address;
+			g_baudrate = parameter;
 			break;
 		case I2C:
-			g_i2c_address = i2c_address;
+			g_i2c_address = parameter;
 			break;
 		case SPI:
+			g_sspin = parameter;
 			break;
 	}
 	
@@ -79,6 +85,28 @@ SerialLCD::SerialLCD (int num_lines,int num_col,int i2c_address,int interface){
 }
 
 // Low level functions
+
+// SPI transfer out (bitbanging)
+void spitransfer(unsigned char var) {
+	int i;
+
+	digitalWrite(g_sspin, LOW);
+	digitalWrite(g_sclk, HIGH);
+
+	for (i=1; i<=8; i++) {
+		digitalWrite(g_sclk, LOW);
+		//delayMicroseconds(SPIDELAY);
+		if (var & 0x80)
+			digitalWrite(g_mosi, HIGH);
+		else
+			digitalWrite(g_mosi, LOW);
+		var <<= 1;
+		digitalWrite(g_sclk, HIGH);
+		//delayMicroseconds(SPIDELAY);
+		}
+	digitalWrite(g_sspin, HIGH);
+}
+
 // send command without parameter
 void sendcommand(unsigned char command) {
 	switch (g_interface) {
@@ -93,11 +121,13 @@ void sendcommand(unsigned char command) {
 			Wire.endTransmission();
 			break;
 		case SPI:
+			spitransfer(0xFE);
+			spitransfer(command);
 			break;
 	}
 }
 
-// send command without parameter
+// send command with parameter
 void sendcommand2(unsigned char command, unsigned char value) {
 	switch (g_interface) {
 		case RS232: 
@@ -113,11 +143,14 @@ void sendcommand2(unsigned char command, unsigned char value) {
 			Wire.endTransmission();
 			break;
 		case SPI:
+			spitransfer(0xFE);
+			spitransfer(command);
+			spitransfer(value);
 			break;
 	}
 }
 
-//	Send a command to the display that is not supported
+//	Send an HD44780 command to the display
 void SerialLCD::command(int value) {
 	sendcommand2(COMMAND, value);
 }
@@ -134,6 +167,7 @@ size_t SerialLCD::write(uint8_t value) {
 			Wire.endTransmission();
 			break;
 		case SPI:
+			spitransfer(value);
 			break;
 	}
 }
@@ -242,6 +276,11 @@ void SerialLCD::init () {
 			Wire.begin();
 			break;
 		case SPI:
+			pinMode(g_sspin, OUTPUT);
+			pinMode(g_sclk, OUTPUT);
+			pinMode(g_mosi, OUTPUT);
+			pinMode(g_miso, INPUT);
+			digitalWrite(g_sspin, HIGH);
 			break;
 	}
 	on();
@@ -259,6 +298,8 @@ void SerialLCD::setCursor(int line_num, int x){
 //Create custom character
 void SerialLCD::createChar(unsigned char char_num, unsigned char *rows)
 {	
+	int i;
+	
 	switch (g_interface) {
 		case RS232:
 			Serial.write(0xFE);
@@ -275,6 +316,11 @@ void SerialLCD::createChar(unsigned char char_num, unsigned char *rows)
 			Wire.endTransmission();
 			break;
 		case SPI:
+			spitransfer(0xFE);
+			spitransfer(LOADCUSTOMCHARACTER);
+			spitransfer(char_num);
+			for (i=0; i<CUSTOM_CHAR_SIZE; i++)
+				spitransfer(rows[i]); 
 			break;
 	}
 }
@@ -310,12 +356,13 @@ void  SerialLCD::printstr(const char c[])
 			break;
 		case I2C:
 			Wire.beginTransmission(g_i2c_address);
-			//Wire.write(len);
 			while (len--)
 				Wire.write(*c++);
 			Wire.endTransmission();
 			break;
 		case SPI:
+			while (len--)
+				spitransfer(*c++);
 			break;
 		}
 }

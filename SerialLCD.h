@@ -1,5 +1,16 @@
+/* NKC Electronics */
 #ifndef SerialLCD_h
 #define SerialLCD_h
+
+// Include files
+#if ARDUINO >= 100
+#include "Arduino.h"
+#else
+#include "WProgram.h"
+#endif
+#include <Wire.h>
+
+// #include "Print.h"
 
 // Min and Max values
 #define MIN_BRIGHTNESS		1
@@ -53,10 +64,7 @@
 #define DISPLAYI2CADDRESS	0x72
 #define COMMAND				0xFE
 
-// Include files
-#include "Arduino.h"
-#include <Wire.h>
-#include "Print.h"
+#define SPIDELAY			5
 
 class SerialLCD : public Print {
 

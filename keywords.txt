@@ -1,0 +1,44 @@
+#######################################
+# Syntax Coloring Map For SerialLCD
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+command	KEYWORD2
+init	KEYWORD2
+clear	KEYWORD2
+home	KEYWORD2
+on	KEYWORD2
+off	KEYWORD2
+cursorOn	KEYWORD2
+cursorOff	KEYWORD2
+blinkOn	KEYWORD2
+blinkOff	KEYWORD2
+left	KEYWORD2
+right	KEYWORD2
+backspace	KEYWORD2
+shiftLeft	KEYWORD2
+shiftRight	KEYWORD2
+displayVersion	KEYWORD2
+displayBaudRate	KEYWORD2
+displayI2CAddress	KEYWORD2
+changeBaudRate	KEYWORD2
+changeI2CAddress	KEYWORD2
+setCursor	KEYWORD2
+createChar	KEYWORD2
+setBacklightBrightness KEYWORD2
+setContrast	KEYWORD2
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+SerialLCD	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
